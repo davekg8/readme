@@ -19,6 +19,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useState, useTransition } from "react";
 import { generateChapterSummary, GenerateChapterSummaryInput } from "@/ai/flows/generate-chapter-summary";
 import { Sparkles } from "lucide-react";
+import { saveChapter } from "@/actions/author";
+import { useRouter } from "next/navigation";
 
 const formSchema = z.object({
   title: z.string().min(1, "Title is required."),
@@ -28,7 +30,9 @@ const formSchema = z.object({
 
 export function AuthorDashboardForm() {
   const { toast } = useToast();
-  const [isPending, startTransition] = useTransition();
+  const router = useRouter();
+  const [isSaving, startSavingTransition] = useTransition();
+  const [isGenerating, startGeneratingTransition] = useTransition();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -53,7 +57,7 @@ export function AuthorDashboardForm() {
       return;
     }
 
-    startTransition(async () => {
+    startGeneratingTransition(async () => {
       try {
         const input: GenerateChapterSummaryInput = { chapterContent: content };
         const result = await generateChapterSummary(input);
@@ -76,12 +80,28 @@ export function AuthorDashboardForm() {
   };
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values);
-    toast({
-      title: "Chapter Saved!",
-      description: `Your chapter "${values.title}" has been saved (mock).`,
+    startSavingTransition(async () => {
+        try {
+            await saveChapter(values);
+            toast({
+                title: "Chapter Saved!",
+                description: `Your chapter "${values.title}" has been saved.`,
+            });
+            form.reset();
+            // Refresh the page to see the new chapter in the sidebar
+            router.refresh(); 
+        } catch (error) {
+            console.error(error);
+            toast({
+                title: "Error",
+                description: "Failed to save chapter.",
+                variant: "destructive",
+            });
+        }
     });
   }
+
+  const isPending = isSaving || isGenerating;
 
   return (
     <div className="grid md:grid-cols-2 gap-8">
@@ -132,7 +152,7 @@ export function AuthorDashboardForm() {
                     disabled={isPending}
                   >
                     <Sparkles className="mr-2 h-4 w-4" />
-                    {isPending ? "Generating..." : "Generate with AI"}
+                    {isGenerating ? "Generating..." : "Generate with AI"}
                   </Button>
                 </div>
                 <FormControl>
@@ -146,7 +166,7 @@ export function AuthorDashboardForm() {
               </FormItem>
             )}
           />
-          <Button type="submit">Save Chapter</Button>
+          <Button type="submit" disabled={isPending}>{isSaving ? "Saving..." : "Save Chapter"}</Button>
         </form>
       </Form>
       <div className="space-y-6">
