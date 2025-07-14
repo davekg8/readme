@@ -1,6 +1,7 @@
 'use server';
 
-import { books } from '@/lib/data';
+import { firestore } from '@/lib/firebase';
+import { collection, addDoc, query, getDocs, orderBy, doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
 
 type NewChapter = {
@@ -9,30 +10,44 @@ type NewChapter = {
   summary?: string;
 };
 
-// NOTE: This is a mock implementation. In a real application, you would save to a database.
-// For now, we'll add to the first book in the list.
+// NOTE: This now saves to Firestore.
 export async function saveChapter(chapter: NewChapter) {
-  if (books.length === 0) {
-    // In a real app, we might create a new book here or handle this case differently.
-    // For now, we can create a default book if none exist.
-    books.push({
-      id: 'new-book',
+  const booksCollection = collection(firestore, 'books');
+  const q = query(booksCollection, orderBy('title'),_limit(1));
+  const querySnapshot = await getDocs(q);
+
+  let bookId;
+
+  if (querySnapshot.empty) {
+    // In a real app, we might have a dedicated "Create Book" flow.
+    // For now, let's create a default book if none exist.
+    const newBook = {
       title: 'My First Book',
       author: 'New Author',
       chapters: [],
-    });
+    };
+    const docRef = await addDoc(booksCollection, newBook);
+    bookId = docRef.id;
+  } else {
+    bookId = querySnapshot.docs[0].id;
   }
-  
-  const book = books[0];
-  const newChapter = {
+
+  const bookRef = doc(firestore, 'books', bookId);
+  const chapterCount = (querySnapshot.docs[0]?.data().chapters || []).length;
+
+  const newChapterData = {
     ...chapter,
-    id: (book.chapters.length + 1).toString(),
+    id: (chapterCount + 1).toString(),
+    createdAt: new Date(),
   };
 
-  book.chapters.push(newChapter);
+  await updateDoc(bookRef, {
+    chapters: arrayUnion(newChapterData)
+  });
+
 
   // Revalidate paths to update the UI
   revalidatePath('/author/dashboard');
-  revalidatePath(`/books/${book.id}/chapters/${newChapter.id}`);
+  revalidatePath(`/books/${bookId}/chapters/${newChapterData.id}`);
   revalidatePath('/'); // To update the navigation
 }

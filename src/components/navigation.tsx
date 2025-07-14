@@ -4,10 +4,7 @@ import {
   BookOpen,
   ChevronDown,
   ChevronRight,
-  LayoutDashboard,
   PanelLeft,
-  Settings,
-  Shield,
 } from 'lucide-react';
 import {
   SidebarHeader,
@@ -15,10 +12,6 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarContent,
-  SidebarTrigger,
-  SidebarMenuSub,
-  SidebarMenuSubItem,
-  SidebarMenuSubButton,
   SidebarFooter,
 } from '@/components/ui/sidebar';
 import {
@@ -26,19 +19,34 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
-import { books } from '@/lib/data';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from './ui/button';
 import { Logo, QuillIcon } from './icons';
-import { cn } from '@/lib/utils';
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Book, getBooks } from '@/lib/data';
+import { SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem } from './ui/sidebar';
+import { Shield } from 'lucide-react';
+
 
 export function Navigation() {
   const pathname = usePathname();
-  const [openBooks, setOpenBooks] = useState<Record<string, boolean>>(
-    books.reduce((acc, book) => ({ ...acc, [book.id]: true }), {})
-  );
+  const [books, setBooks] = useState<Book[]>([]);
+  const [openBooks, setOpenBooks] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    async function fetchBooks() {
+      const fetchedBooks = await getBooks();
+      setBooks(fetchedBooks);
+      // Default all books to open
+      const initialOpenState = fetchedBooks.reduce((acc, book) => {
+        acc[book.id] = true;
+        return acc;
+      }, {} as Record<string, boolean>);
+      setOpenBooks(initialOpenState);
+    }
+    fetchBooks();
+  }, [pathname]); // Refetch when path changes to see new chapters
 
   const toggleBook = (bookId: string) => {
     setOpenBooks(prev => ({ ...prev, [bookId]: !prev[bookId] }));
@@ -102,7 +110,7 @@ export function Navigation() {
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <SidebarMenuSub>
-                  {book.chapters.map(chapter => (
+                  {book.chapters.sort((a, b) => parseInt(a.id, 10) - parseInt(b.id, 10)).map(chapter => (
                     <SidebarMenuSubItem key={chapter.id}>
                       <SidebarMenuSubButton
                         asChild

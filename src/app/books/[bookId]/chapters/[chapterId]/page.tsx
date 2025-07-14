@@ -1,5 +1,5 @@
 import { getChapter } from "@/lib/data";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -20,8 +20,8 @@ type ChapterPageProps = {
   };
 };
 
-export default function ChapterPage({ params }: ChapterPageProps) {
-  const data = getChapter(params.bookId, params.chapterId);
+export default async function ChapterPage({ params }: ChapterPageProps) {
+  const data = await getChapter(params.bookId, params.chapterId);
 
   if (!data) {
     notFound();

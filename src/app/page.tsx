@@ -1,10 +1,13 @@
 import { redirect } from 'next/navigation';
-import { books } from '@/lib/data';
+import { getBooks } from '@/lib/data';
 
-export default function Home() {
+export default async function Home() {
+  const books = await getBooks();
+
   if (books.length > 0 && books[0].chapters.length > 0) {
     const firstBook = books[0];
-    const firstChapter = firstBook.chapters[0];
+    // Sort chapters by ID (assuming they are numeric strings) to get the first one
+    const firstChapter = [...firstBook.chapters].sort((a, b) => parseInt(a.id, 10) - parseInt(b.id, 10))[0];
     redirect(`/books/${firstBook.id}/chapters/${firstChapter.id}`);
   }
 
