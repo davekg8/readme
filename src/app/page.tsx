@@ -4,7 +4,7 @@ import { getBooks } from '@/actions/library';
 export default async function Home() {
   const books = await getBooks();
 
-  if (books.length > 0 && books[0].chapters.length > 0) {
+  if (books.length > 0 && books[0].chapters && books[0].chapters.length > 0) {
     const firstBook = books[0];
     // Sort chapters by ID (assuming they are numeric strings) to get the first one
     const firstChapter = [...firstBook.chapters].sort((a, b) => parseInt(a.id, 10) - parseInt(b.id, 10))[0];
