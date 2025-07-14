@@ -2,6 +2,7 @@
 
 import { firestore } from '@/lib/firebase';
 import { revalidatePath } from 'next/cache';
+import admin from 'firebase-admin';
 
 type NewChapter = {
   title: string;
@@ -34,16 +35,16 @@ export async function saveChapter(chapter: NewChapter) {
   }
 
   const bookRef = firestore.collection('books').doc(bookId);
-  const chapterCount = (bookDoc.data()?.chapters || []).length;
+  const bookData = bookDoc.data();
+  const chapterCount = (bookData?.chapters || []).length;
 
   const newChapterData = {
     ...chapter,
     id: (chapterCount + 1).toString(),
-    createdAt: new Date(),
+    createdAt: admin.firestore.FieldValue.serverTimestamp(), // Use server timestamp
   };
 
   // In Admin SDK, we use FieldValue for arrayUnion
-  const admin = await import('firebase-admin');
   await bookRef.update({
     chapters: admin.firestore.FieldValue.arrayUnion(newChapterData)
   });

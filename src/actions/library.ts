@@ -1,12 +1,14 @@
 'use server';
 
 import { firestore } from '@/lib/firebase';
+import type { Timestamp } from 'firebase-admin/firestore';
 
 export type Chapter = {
   id: string;
   title: string;
   content: string;
   summary?: string;
+  createdAt: string; // Changed to string for serialization
 };
 
 export type Book = {
@@ -16,6 +18,19 @@ export type Book = {
   chapters: Chapter[];
 };
 
+// Helper function to serialize Firestore Timestamps
+function serializeChapter(chapter: any): Chapter {
+    const { createdAt, ...rest } = chapter;
+    return {
+        ...rest,
+        // Convert Timestamp to ISO string, or handle if it's already a string/date
+        createdAt: createdAt instanceof Date 
+            ? createdAt.toISOString() 
+            : (createdAt?.toDate?.().toISOString() || new Date().toISOString()),
+    } as Chapter;
+}
+
+
 // Fetch all books from Firestore using Admin SDK
 export async function getBooks(): Promise<Book[]> {
   const booksCollection = firestore.collection('books');
@@ -23,10 +38,15 @@ export async function getBooks(): Promise<Book[]> {
   if (snapshot.empty) {
     return [];
   }
-  return snapshot.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data(),
-  })) as Book[];
+  return snapshot.docs.map(doc => {
+    const data = doc.data();
+    return {
+        id: doc.id,
+        title: data.title,
+        author: data.author,
+        chapters: data.chapters ? data.chapters.map(serializeChapter) : [],
+    }
+  }) as Book[];
 }
 
 
@@ -39,7 +59,15 @@ export const getChapter = async (bookId: string, chapterId: string) => {
     return null;
   }
 
-  const book = { id: bookDoc.id, ...bookDoc.data() } as Book;
+  const bookData = bookDoc.data();
+  if (!bookData) return null;
+
+  const book: Book = {
+      id: bookDoc.id,
+      title: bookData.title,
+      author: bookData.author,
+      chapters: bookData.chapters ? bookData.chapters.map(serializeChapter) : [],
+  };
   
   // Sort chapters by their ID (as numbers)
   const sortedChapters = [...book.chapters].sort((a, b) => parseInt(a.id, 10) - parseInt(b.id, 10));
