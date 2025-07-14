@@ -1,7 +1,6 @@
 'use server';
 
 import { firestore } from '@/lib/firebase';
-import { collection, addDoc, query, getDocs, orderBy, doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
 
 type NewChapter = {
@@ -12,11 +11,11 @@ type NewChapter = {
 
 // NOTE: This now saves to Firestore.
 export async function saveChapter(chapter: NewChapter) {
-  const booksCollection = collection(firestore, 'books');
-  const q = query(booksCollection, orderBy('title'),_limit(1));
-  const querySnapshot = await getDocs(q);
+  const booksCollection = firestore.collection('books');
+  const querySnapshot = await booksCollection.orderBy('title').limit(1).get();
 
   let bookId;
+  let bookDoc;
 
   if (querySnapshot.empty) {
     // In a real app, we might have a dedicated "Create Book" flow.
@@ -26,14 +25,16 @@ export async function saveChapter(chapter: NewChapter) {
       author: 'New Author',
       chapters: [],
     };
-    const docRef = await addDoc(booksCollection, newBook);
+    const docRef = await booksCollection.add(newBook);
     bookId = docRef.id;
+    bookDoc = await docRef.get();
   } else {
-    bookId = querySnapshot.docs[0].id;
+    bookDoc = querySnapshot.docs[0];
+    bookId = bookDoc.id;
   }
 
-  const bookRef = doc(firestore, 'books', bookId);
-  const chapterCount = (querySnapshot.docs[0]?.data().chapters || []).length;
+  const bookRef = firestore.collection('books').doc(bookId);
+  const chapterCount = (bookDoc.data()?.chapters || []).length;
 
   const newChapterData = {
     ...chapter,
@@ -41,8 +42,10 @@ export async function saveChapter(chapter: NewChapter) {
     createdAt: new Date(),
   };
 
-  await updateDoc(bookRef, {
-    chapters: arrayUnion(newChapterData)
+  // In Admin SDK, we use FieldValue for arrayUnion
+  const admin = await import('firebase-admin');
+  await bookRef.update({
+    chapters: admin.firestore.FieldValue.arrayUnion(newChapterData)
   });
 
 

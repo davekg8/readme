@@ -1,5 +1,4 @@
 import { firestore } from '@/lib/firebase';
-import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 
 export type Chapter = {
   id: string;
@@ -15,10 +14,10 @@ export type Book = {
   chapters: Chapter[];
 };
 
-// Fetch all books from Firestore
+// Fetch all books from Firestore using Admin SDK
 export async function getBooks(): Promise<Book[]> {
-  const booksCollection = collection(firestore, 'books');
-  const snapshot = await getDocs(booksCollection);
+  const booksCollection = firestore.collection('books');
+  const snapshot = await booksCollection.get();
   if (snapshot.empty) {
     return [];
   }
@@ -29,12 +28,12 @@ export async function getBooks(): Promise<Book[]> {
 }
 
 
-// Fetch a single chapter from Firestore
+// Fetch a single chapter from Firestore using Admin SDK
 export const getChapter = async (bookId: string, chapterId: string) => {
-  const bookRef = doc(firestore, 'books', bookId);
-  const bookDoc = await getDoc(bookRef);
+  const bookRef = firestore.collection('books').doc(bookId);
+  const bookDoc = await bookRef.get();
 
-  if (!bookDoc.exists()) {
+  if (!bookDoc.exists) {
     return null;
   }
 
