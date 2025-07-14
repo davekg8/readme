@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { getBooks } from '@/lib/data';
+import { getBooks } from '@/actions/library';
 
 export default async function Home() {
   const books = await getBooks();

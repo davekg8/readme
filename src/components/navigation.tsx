@@ -24,7 +24,8 @@ import { usePathname } from 'next/navigation';
 import { Button } from './ui/button';
 import { Logo, QuillIcon } from './icons';
 import React, { useState, useEffect } from 'react';
-import { Book, getBooks } from '@/lib/data';
+import { Book } from '@/actions/library';
+import { getBooks } from '@/actions/library';
 import { SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem } from './ui/sidebar';
 import { Shield } from 'lucide-react';
 

@@ -1,4 +1,4 @@
-import { getChapter } from "@/lib/data";
+import { getChapter } from "@/actions/library";
 import { notFound } from "next/navigation";
 import {
   Card,

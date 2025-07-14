@@ -1,3 +1,5 @@
+'use server';
+
 import { firestore } from '@/lib/firebase';
 
 export type Chapter = {
