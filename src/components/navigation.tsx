@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -111,7 +112,7 @@ export function Navigation() {
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <SidebarMenuSub>
-                  {book.chapters.sort((a, b) => parseInt(a.id, 10) - parseInt(b.id, 10)).map(chapter => (
+                  {book.chapters && book.chapters.sort((a, b) => parseInt(a.id, 10) - parseInt(b.id, 10)).map(chapter => (
                     <SidebarMenuSubItem key={chapter.id}>
                       <SidebarMenuSubButton
                         asChild
