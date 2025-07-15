@@ -41,7 +41,8 @@ export async function saveChapter(chapter: NewChapter) {
   const newChapterData = {
     ...chapter,
     id: (chapterCount + 1).toString(),
-    createdAt: admin.firestore.FieldValue.serverTimestamp(), // Use server timestamp
+    // Use a standard ISO string for the timestamp instead of FieldValue.
+    createdAt: new Date().toISOString(), 
   };
 
   // In Admin SDK, we use FieldValue for arrayUnion
